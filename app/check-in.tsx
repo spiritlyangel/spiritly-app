@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { doc, updateDoc } from 'firebase/firestore';
+import { auth, db } from '../lib/firebase';
 
 type Mood = {
   label: string;
@@ -41,10 +43,24 @@ export default function CheckInScreen() {
   const [selected, setSelected] = useState<string | null>(null);
   const params = useLocalSearchParams<{ faith?: string; life?: string }>();
 
-  const handleSelect = (mood: Mood) => {
+  const handleSelect = async (mood: Mood) => {
     if (selected) return;
     setSelected(mood.label);
-    console.log('Starting Formation Stage:', mood.sem);
+
+    const uid = auth.currentUser?.uid;
+    if (uid) {
+      try {
+        await updateDoc(doc(db, 'users', uid), {
+          semLevel: mood.sem,
+          lifeSeason: params.life ?? null,
+          days: params.days ?? null,
+          profileCompletedAt: new Date().toISOString(),
+        });
+      } catch (e) {
+        console.log('Could not save profile', e);
+      }
+    }
+
     setTimeout(() => {
       router.push({ pathname: '/home', params: { ...params, sem: String(mood.sem) } });
     }, 900);

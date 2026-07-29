@@ -26,6 +26,9 @@ export default function SplashScreen() {
           <Pressable style={styles.beginButton} onPress={() => router.push('/register')}>
             <Text style={styles.beginText}>BEGIN</Text>
           </Pressable>
+          <Pressable onPress={() => router.push('/login')} style={styles.signInLink}>
+            <Text style={styles.signInText}>Already have an account? Sign in</Text>
+          </Pressable>
         </View>
 
       </View>
@@ -122,6 +125,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: GOLD,
     letterSpacing: 4,
+  },
+  signInLink: { 
+    marginTop: 22 
+  },
+  signInText: { 
+    fontSize: 12.5, 
+    color: 'rgba(138,149,163,0.9)' 
   },
   footer: {
     flex: 1,

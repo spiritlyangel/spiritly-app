@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { signOut } from 'firebase/auth';
 import { getReflection, refineActions, OPENING_QUESTIONS, type Turn } from '../lib/gemini';
+import { collection, addDoc } from 'firebase/firestore';
+import { auth, db } from '../lib/firebase';
+
 const TOTAL_TURNS = 3;
 const VERSE = {
   text: 'For I know the plans I have for you, declares the Lord — plans to prosper you.',
@@ -22,6 +26,7 @@ function today() {
 }
 export default function HomeScreen() {
   const params = useLocalSearchParams<{ sem?: string; life?: string; days?: string }>();
+  const router = useRouter();
   const SEM_LEVEL = Number(params.sem ?? 1);
   const [phase, setPhase] = useState<'asking' | 'suggest' | 'confirmed'>('asking');
   const [history, setHistory] = useState<Turn[]>([]);
@@ -63,9 +68,26 @@ export default function HomeScreen() {
     }
     setThinking(false);
   };
-  const acceptActions = () => {
+  const acceptActions = async () => {
     setChecked(new Array(actions.length).fill(false));
     setPhase('confirmed');
+
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+
+    try {
+      await addDoc(collection(db, 'users', uid, 'reflections'), {
+        createdAt: new Date().toISOString(),
+        semLevel: SEM_LEVEL,
+        lifeSeason: params.life ?? null,
+        days: params.days ?? null,
+        turns: history,
+        actions,
+        model: 'gemini-3.6-flash',
+      });
+    } catch (e) {
+      console.log('Could not save reflection', e);
+    }
   };
 
   const handleRefine = async () => {
@@ -101,8 +123,13 @@ export default function HomeScreen() {
           <Text style={styles.greeting}>{greeting()}</Text>
           <Text style={styles.date}>{today()}</Text>
         </View>
-        <View style={styles.streakPill}>
-          <Text style={styles.streakText}>Day 1</Text>
+        <View style={{ alignItems: 'flex-end', gap: 8 }}>
+          <View style={styles.streakPill}>
+            <Text style={styles.streakText}>Day 1</Text>
+          </View>
+          <Pressable onPress={() => { signOut(auth); router.replace('/'); }}>
+            <Text style={styles.signOut}>Sign out</Text>
+          </Pressable>
         </View>
       </View>
       {/* Daily verse */}
@@ -238,6 +265,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   streakText: { color: GOLD, fontSize: 12, fontWeight: '600', letterSpacing: 0.5 },
+  signOut: { color: MUTED, fontSize: 11.5 },
   verseCard: {
     borderWidth: 1,
     borderColor: 'rgba(201,168,76,0.3)',
