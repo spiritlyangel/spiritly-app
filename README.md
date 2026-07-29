@@ -1,50 +1,123 @@
-# Welcome to your Expo app 👋
+# Spiritly
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+**A Christ-centered formation companion. You were never meant to journey alone.**
 
-## Get started
+Spiritly is a mobile app for Christians who want to grow, not just consume content. Most faith apps hand you a devotional and hope for the best. Spiritly holds a conversation — one that adapts to where you actually are, and ends with small, real steps for the day in front of you.
 
-1. Install dependencies
+Built for the Philippines first, where 93% of the population is Christian, and designed for the 2.6 billion Christians worldwide who are underserved by tools built elsewhere.
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Start the app
+## The problem
 
-   ```bash
-   npx expo start
-   ```
+Faith apps are content libraries. Social media optimises for attention. Christian dating apps charge you to speak to someone who already liked you. None of them help a person actually *grow* — and none of them notice when someone is struggling.
 
-In the output, you'll find options to open the app in a
+Spiritly is built the other way round: formation first, connection second, and nothing sold by extracting attention.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+---
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## The SPIRIT framework
 
-## Get a fresh project
+Whole-life formation across six dimensions, rather than the spiritual life treated as a separate compartment:
 
-When you're ready, run:
+| | Dimension | Covers |
+|---|---|---|
+| **S** | Spirit | Scripture, prayer, the interior life |
+| **P** | Physical | Body, health, home and environment |
+| **I** | Intellect | Learning, skill, wisdom |
+| **R** | Relationship | Family, friendship, community |
+| **I** | Income | Work, provision, stewardship |
+| **T** | Transcendence | Service, legacy, purpose beyond the self |
+
+Adapted from Dr. Tal Ben-Shahar's SPIRE model of wellbeing, reworked through a Christian lens. Where SPIRE includes *Emotional*, SPIRIT includes **Income** and **Transcendence** — because work and provision are where faith is tested daily, and because the Christian life does not end with the self.
+
+---
+
+## Formation Stage
+
+Spiritly's adaptive engine, internally called **SEM — Spirit-Empowered Maturity**. The name is deliberate: growth comes from being empowered by grace, not from self-reliance.
+
+Four stages, inferred by the AI and never shown to the user as a score:
+
+- **0 — Overwhelmed.** Presence only. No tasks, no challenge.
+- **1 — Stabilizing.** Small and gentle. One step at most.
+- **2 — Capable.** Real reflection and real action.
+- **3 — Activated.** Pointing outward — to other people, to service.
+
+The stage changes everything downstream: the opening question, how far the AI pushes, what kind of actions it offers.
+
+---
+
+## How the AI actually works
+
+Gemini is not a chatbot bolted onto a devotional app. It makes every consequential decision in the core experience, per user, with no human in the loop:
+
+- **Chooses the opening question** based on Formation Stage
+- **Reads the answer** and responds to what was actually said, not with generic encouragement
+- **Writes the next question** — following the thread the person opened, going one layer deeper rather than changing subject
+- **Generates three actions** at the end, shaped by the whole conversation and paced to the person's stage
+- **Follows their tradition without being told.** If someone mentions the rosary, it meets them in Catholic language. If they mention quiet time, it shifts. It never assumes.
+- **Replies in Taglish** if that is how the person writes
+
+A system prompt holds the voice: short sentences, everyday words, no exclamation marks, no advice unless asked. Written for a tired person reading on a phone at 6am, for whom English is a second language.
+
+---
+
+## Stack
+
+| Layer | Technology |
+|---|---|
+| Mobile | React Native + Expo (SDK 54) |
+| AI | **Google Gemini API** (`gemini-3.6-flash`) |
+| Backend | **Firebase / Google Cloud** — Auth, Firestore |
+| Payments | GCash / Maya |
+| Language | TypeScript |
+
+---
+
+## Running it locally
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Then scan the QR code with **Expo Go** on Android, or press `w` for the browser.
 
-## Learn more
+You will need a Gemini API key. Create a `.env` file in the project root:
 
-To learn more about developing your project with Expo, look at the following resources:
+```
+EXPO_PUBLIC_GEMINI_API_KEY=your_key_here
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Free keys are available at [aistudio.google.com](https://aistudio.google.com).
 
-## Join the community
+---
 
-Join our community of developers creating universal apps.
+## Status
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+**Working:** splash, onboarding, initial Formation Stage check-in, and the full threaded reflection flow with live Gemini calls, adaptive questioning, and generated daily actions.
+
+**In progress:** registration and Firebase Auth, Firestore persistence.
+
+**Planned:** SPIRIT dashboard, milestones, community, and SPIRITLY RELATE™ — formation-gated connection for singles and couples, which unlocks only as a person grows rather than the moment they pay.
+
+---
+
+## Pre-existing work
+
+This project was scaffolded from the standard Expo starter template (`create-expo-app`), and the default tab navigation, themed components, and hooks from that template remain in the repository where unused. All Spiritly-specific work — the SPIRIT framework, Formation Stage engine, reflection flow, prompt design, screens, and branding — was created from June 2026 onward.
+
+---
+
+## Principles
+
+No ads. No selling user data. No attention extraction.
+
+People will type their grief and their doubt into this app. That is a trust worth building for properly.
+
+---
+
+## Licence
+
+MIT — see [LICENSE](LICENSE).
