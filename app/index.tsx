@@ -23,7 +23,7 @@ export default function SplashScreen() {
           </Text>
           <View style={styles.divider} />
           <Text style={styles.tagline}>You were never meant to journey alone.</Text>
-          <Pressable style={styles.beginButton} onPress={() => router.push('/onboarding')}>
+          <Pressable style={styles.beginButton} onPress={() => router.push('/register')}>
             <Text style={styles.beginText}>BEGIN</Text>
           </Pressable>
         </View>
