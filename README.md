@@ -56,6 +56,7 @@ Gemini is not a chatbot bolted onto a devotional app. It makes every consequenti
 - **Reads the answer** and responds to what was actually said, not with generic encouragement
 - **Writes the next question** — following the thread the person opened, going one layer deeper rather than changing subject
 - **Generates three actions** at the end, shaped by the whole conversation and paced to the person's stage
+- **Identifies which SPIRIT dimension** the person's words actually concern — money worry is Income even in a prayer app, exhaustion is Physical, loneliness is Relationship. Tracked across sessions to show where a life genuinely needs attention, and to notice when a dimension has gone quiet.
 - **Follows their tradition without being told.** If someone mentions the rosary, it meets them in Catholic language. If they mention quiet time, it shifts. It never assumes.
 - **Replies in Taglish** if that is how the person writes
 
