@@ -72,6 +72,7 @@ export const OPENING_QUESTIONS: Record<number, string> = {
 
 type Result = {
   reflection: string;
+  dimension?: string;
   nextQuestion?: string;
   actions?: string[];
 };
@@ -91,11 +92,18 @@ export async function getReflection(params: {
     .map((t) => `Q: ${t.question}\nThey said: ${t.answer}\nYou reflected: ${t.reflection}`)
     .join('\n\n');
 
+  const dimensionRule = `"dimension" is which SPIRIT dimension their words are really about. Choose exactly one:
+Spirit, Physical, Intellect, Relationship, Income, Transcendence.
+Judge by what they described, not where they said it. Money worry is Income even in a prayer app.
+Exhaustion is Physical. Loneliness is Relationship.`;
+
   const task = isFinalTurn
-    ? `Return JSON: { "reflection": string, "actions": [string, string, string] }
-The three actions must be small, specific, and doable today — shaped by everything they shared, not generic. Match their Formation Stage.`
-    : `Return JSON: { "reflection": string, "nextQuestion": string }
-The reflection is 1-2 sentences responding to what they actually said. The next question should go one layer deeper, following their thread — not a topic change.`;
+    ? `Return JSON: { "reflection": string, "dimension": string, "actions": [string, string, string] }
+The three actions must be small, specific, and doable today - shaped by everything they shared, not generic. Match their Formation Stage.
+${dimensionRule}`
+    : `Return JSON: { "reflection": string, "dimension": string, "nextQuestion": string }
+The reflection is 1-2 short sentences responding to what they actually said. The next question should go one layer deeper, following their thread - not a topic change.
+${dimensionRule}`;
 
   const prompt = `Formation Stage: ${semLevel}
   ${life ? `Life season: ${life}` : ''}

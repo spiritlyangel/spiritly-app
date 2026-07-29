@@ -24,14 +24,10 @@ export default function LoginScreen() {
       const snap = await getDoc(doc(db, 'users', cred.user.uid));
       const data = snap.data();
 
-      if (data?.semLevel != null) {
+      if (data?.lifeSeason) {
         router.replace({
-          pathname: '/home',
-          params: {
-            sem: String(data.semLevel),
-            life: data.lifeSeason ?? '',
-            days: data.days ?? '',
-          },
+          pathname: '/check-in',
+          params: { life: data.lifeSeason, days: data.days ?? '' },
         });
       } else {
         router.replace('/onboarding');

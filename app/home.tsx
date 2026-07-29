@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from 'react-
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { signOut } from 'firebase/auth';
 import { getReflection, refineActions, OPENING_QUESTIONS, type Turn } from '../lib/gemini';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 
 const TOTAL_TURNS = 3;
@@ -38,6 +38,8 @@ export default function HomeScreen() {
   const [error, setError] = useState('');
   const [refining, setRefining] = useState(false);
   const [refineCount, setRefineCount] = useState(0);
+  const [dimensions, setDimensions] = useState<string[]>([]);
+  const [reflectionId, setReflectionId] = useState<string | null>(null);
   const isFinalTurn = history.length === TOTAL_TURNS - 1;
   const submit = async () => {
     const answer = input.trim();
@@ -56,6 +58,7 @@ export default function HomeScreen() {
         isFinalTurn,
       });
       setHistory((h) => [...h, { question, answer, reflection: r.reflection }]);
+      if (r.dimension) setDimensions((d) => [...d, r.dimension!]);
       if (r.actions) {
         setActions(r.actions);
         setPhase('suggest');
@@ -76,15 +79,18 @@ export default function HomeScreen() {
     if (!uid) return;
 
     try {
-      await addDoc(collection(db, 'users', uid, 'reflections'), {
+      const ref = await addDoc(collection(db, 'users', uid, 'reflections'), {
         createdAt: new Date().toISOString(),
         semLevel: SEM_LEVEL,
         lifeSeason: params.life ?? null,
         days: params.days ?? null,
         turns: history,
         actions,
+        dimensions,
+        checked: new Array(actions.length).fill(false),
         model: 'gemini-3.6-flash',
       });
+      setReflectionId(ref.id);
     } catch (e) {
       console.log('Could not save reflection', e);
     }
@@ -110,8 +116,17 @@ export default function HomeScreen() {
     setRefining(false);
   };
 
-  const toggleAction = (i: number) => {
-    setChecked((c) => c.map((v, idx) => (idx === i ? !v : v)));
+  const toggleAction = async (i: number) => {
+    const next = checked.map((v, idx) => (idx === i ? !v : v));
+    setChecked(next);
+
+    const uid = auth.currentUser?.uid;
+    if (!uid || !reflectionId) return;
+    try {
+      await updateDoc(doc(db, 'users', uid, 'reflections', reflectionId), { checked: next });
+    } catch (e) {
+      console.log('Could not save progress', e);
+    }
   };
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.inner}>
