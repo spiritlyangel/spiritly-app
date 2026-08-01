@@ -9,11 +9,10 @@ export default function RegisterScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  const canSubmit = email.trim() && password.length >= 6 && consent && !busy;
+  const canSubmit = email.trim() && password.length >= 6 && !busy;
 
   const handleRegister = async () => {
     if (!canSubmit) return;
@@ -26,13 +25,14 @@ export default function RegisterScreen() {
       await setDoc(doc(db, 'users', cred.user.uid), {
         email: email.trim(),
         createdAt: new Date().toISOString(),
-        consentGivenAt: new Date().toISOString(),
+        firstName: null,
+        birthday: null,
         semLevel: null,
         lifeSeason: null,
         days: null,
       });
 
-      router.replace('/onboarding');
+      router.replace('/profile');
     } catch (e: any) {
       const code = e?.code ?? '';
       if (code === 'auth/email-already-in-use') setError('That email is already registered.');
@@ -81,17 +81,6 @@ export default function RegisterScreen() {
         editable={!busy}
         style={styles.input}
       />
-
-      <Pressable onPress={() => setConsent(!consent)} style={styles.consentRow}>
-        <View style={[styles.checkbox, consent && styles.checkboxOn]}>
-          {consent && <Text style={styles.checkmark}>✓</Text>}
-        </View>
-        <Text style={styles.consentText}>
-          I agree to Spiritly storing my reflections and formation journey, and understand my
-          information may be shared with competition organisers and judges as part of the Build with
-          Gemini XPRIZE.
-        </Text>
-      </Pressable>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
