@@ -13,25 +13,25 @@ type Mood = {
 
 const MOODS: Mood[] = [
   {
-    label: "I'm overwhelmed. I don't know where to start.",
+    label: "It's heavy today. I don't know where to put it.",
     color: '#C15A4C',
     emoji: '🔴',
     sem: 0,
   },
   {
-    label: "I'm okay, but I feel like I'm just going through the motions.",
+    label: "I'm okay. Just going through the motions.",
     color: '#C9925E',
     emoji: '🟠',
     sem: 1,
   },
   {
-    label: "I'm doing well — I'm ready to grow intentionally.",
+    label: "I'm steady today. There's room to grow.",
     color: '#4CAF7D',
     emoji: '🟢',
     sem: 2,
   },
   {
-    label: 'I feel strong in my faith and want to go deeper.',
+    label: "I'm full today. I want to give and share some of it away.",
     color: '#5B8FBF',
     emoji: '🔵',
     sem: 3,
@@ -72,7 +72,7 @@ export default function CheckInScreen() {
       <View style={[styles.glow, styles.glow2]} />
 
       <View style={styles.inner}>
-        <Text style={styles.header}>Before we begin...</Text>
+        <Text style={styles.header}>Before anything else...</Text>
 
         {/* AI message */}
         <View style={styles.messageRow}>
@@ -81,8 +81,7 @@ export default function CheckInScreen() {
           </View>
           <View style={styles.bubble}>
             <Text style={styles.bubbleText}>
-              Hello. I&apos;m glad you&apos;re here. Before anything else — how are you doing today,
-              honestly?
+              How are you doing today, honestly?
             </Text>
           </View>
         </View>
