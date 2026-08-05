@@ -55,6 +55,22 @@ If they mention the rosary, saints, Mass, or Adoration, meet them there.
 If they mention quiet time, small group, or worship night, meet them there.
 Never assume which tradition someone belongs to.
 
+ASSESSING FORMATION STAGE
+On the final turn you also judge where this person actually is. This is not their mood.
+Someone can be grieving and still be Stage 3. Someone can be cheerful and still be Stage 1.
+You are reading capacity, not feeling.
+
+0 - Answers are short or fragmented. They cannot name what is wrong, only that it is heavy.
+    Language of carrying, drowning, not coping. No room for anything asked of them.
+1 - They can name what they feel but stay near the surface. Going through motions.
+    Capable of one small thing, not more.
+2 - They reflect with some depth. They connect one thing to another. They can sit with
+    something uncomfortable without deflecting it. There is room for real action.
+3 - They think past themselves. Other people appear in their answers unprompted.
+    They ask what they can give rather than what they need.
+
+Be conservative. If uncertain between two, choose the lower.
+
 Reply with valid JSON only. No markdown fences.`;
 
 export type Turn = {
@@ -75,18 +91,21 @@ type Result = {
   dimension?: string;
   nextQuestion?: string;
   actions?: string[];
+  assessedStage?: number;
+  stageReason?: string;
 };
 
 export async function getReflection(params: {
   semLevel: number;
   life?: string;
   days?: string;
+  carriedVerse?: { text: string; ref: string };
   history: Turn[];
   currentQuestion: string;
   answer: string;
   isFinalTurn: boolean;
 }): Promise<Result> {
-  const { semLevel, life, days, history, currentQuestion, answer, isFinalTurn } = params;
+  const { semLevel, life, days, carriedVerse, history, currentQuestion, answer, isFinalTurn } = params;
 
   const historyText = history
     .map((t) => `Q: ${t.question}\nThey said: ${t.answer}\nYou reflected: ${t.reflection}`)
@@ -98,9 +117,11 @@ Judge by what they described, not where they said it. Money worry is Income even
 Exhaustion is Physical. Loneliness is Relationship.`;
 
   const task = isFinalTurn
-    ? `Return JSON: { "reflection": string, "dimension": string, "actions": [string, string, string] }
+    ? `Return JSON: { "reflection": string, "dimension": string, "actions": [string, string, string], "assessedStage": number, "stageReason": string }
 The three actions must be small, specific, and doable today - shaped by everything they shared, not generic. Match their Formation Stage.
-${dimensionRule}`
+${dimensionRule}
+"assessedStage" is 0, 1, 2 or 3 - where this person actually is, judged across the whole conversation, using the criteria above. Not their mood.
+"stageReason" is one short sentence explaining the judgement. It is never shown to the user.`
     : `Return JSON: { "reflection": string, "dimension": string, "nextQuestion": string }
 The reflection is 1-2 short sentences responding to what they actually said. The next question should go one layer deeper, following their thread - not a topic change.
 ${dimensionRule}`;
@@ -153,6 +174,7 @@ export async function refineActions(params: {
   const prompt = `Formation Stage: ${semLevel}
 ${life ? `Life season: ${life}` : ''}
 ${days ? `What fills their days: ${days}` : ''}
+${carriedVerse ? `They carried this verse from yesterday: "${carriedVerse.text}" (${carriedVerse.ref}). If it genuinely connects to what they say today, you may return to it. Never force it.` : ''}
 
 Their conversation today:
 ${historyText}

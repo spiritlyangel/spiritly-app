@@ -4,6 +4,8 @@ import { useRouter } from 'expo-router';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
+import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { dayOf, todayKey } from '../lib/day';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -21,16 +23,35 @@ export default function LoginScreen() {
 
     try {
       const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
-      const snap = await getDoc(doc(db, 'users', cred.user.uid));
+      const uid = cred.user.uid;
+      const snap = await getDoc(doc(db, 'users', uid));
       const data = snap.data();
 
-      if (data?.lifeSeason) {
+      if (!data?.lifeSeason) {
+        router.replace('/onboarding');
+        return;
+      }
+
+      // already reflected today? straight through — the mood is asked once a day
+      const recent = await getDocs(
+        query(collection(db, 'users', uid, 'reflections'), orderBy('createdAt', 'desc'), limit(1))
+      );
+      const last = recent.docs[0]?.data() as any;
+
+      if (last && dayOf(last.createdAt) === todayKey()) {
+        router.replace({
+          pathname: '/home',
+          params: {
+            sem: String(last.semLevel ?? 1),
+            life: data.lifeSeason,
+            days: data.days ?? '',
+          },
+        });
+      } else {
         router.replace({
           pathname: '/check-in',
           params: { life: data.lifeSeason, days: data.days ?? '' },
         });
-      } else {
-        router.replace('/onboarding');
       }
     } catch (e: any) {
       const code = e?.code ?? '';

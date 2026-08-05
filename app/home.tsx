@@ -1,16 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { signOut } from 'firebase/auth';
 import { getReflection, refineActions, OPENING_QUESTIONS, type Turn } from '../lib/gemini';
-import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, query, orderBy, getDocs } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
+import { pickVerse, VERSES } from '../lib/verses';
+import { rollingStage } from '../lib/formation';
+import { dayOf, todayKey, yesterdayKey } from '../lib/day';
 
 const TOTAL_TURNS = 3;
-const VERSE = {
-  text: 'For I know the plans I have for you, declares the Lord — plans to prosper you.',
-  ref: 'Jeremiah 29:11',
-};
 function greeting() {
   const h = new Date().getHours();
   if (h < 12) return 'Good morning';
@@ -28,6 +27,7 @@ export default function HomeScreen() {
   const params = useLocalSearchParams<{ sem?: string; life?: string; days?: string }>();
   const router = useRouter();
   const SEM_LEVEL = Number(params.sem ?? 1);
+  const [verse, setVerse] = useState<{ text: string; ref: string } | null>(null);
   const [phase, setPhase] = useState<'asking' | 'suggest' | 'confirmed'>('asking');
   const [history, setHistory] = useState<Turn[]>([]);
   const [question, setQuestion] = useState(OPENING_QUESTIONS[SEM_LEVEL]);
@@ -40,7 +40,68 @@ export default function HomeScreen() {
   const [refineCount, setRefineCount] = useState(0);
   const [dimensions, setDimensions] = useState<string[]>([]);
   const [reflectionId, setReflectionId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [streak, setStreak] = useState(1);
+  const [assessedStage, setAssessedStage] = useState<number | null>(null);
+  const [stageReason, setStageReason] = useState<string | null>(null);
+  const [carried, setCarried] = useState<any>(null);
   const isFinalTurn = history.length === TOTAL_TURNS - 1;
+  const allDone = checked.length > 0 && checked.every(Boolean);
+
+  useEffect(() => {
+    const load = async () => {
+      const uid = auth.currentUser?.uid;
+      if (!uid) {
+        setVerse(pickVerse({ uid: 'anon', semLevel: SEM_LEVEL }));
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const snap = await getDocs(
+          query(collection(db, 'users', uid, 'reflections'), orderBy('createdAt', 'desc'))
+        );
+        const all = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+
+        const today = todayKey();
+
+        // how many days they have actually walked — gaps do not reset it
+        const walked = new Set(all.map((r) => dayOf(r.createdAt)));
+        setStreak(walked.size || 1);
+
+        // already reflected today? restore it
+        const todays = all.find((r) => dayOf(r.createdAt) === today);
+        if (todays) {
+          setHistory(todays.turns ?? []);
+          setActions(todays.actions ?? []);
+          setChecked(todays.checked ?? new Array((todays.actions ?? []).length).fill(false));
+          setDimensions(todays.dimensions ?? []);
+          setReflectionId(todays.id);
+          setPhase('confirmed');
+        }
+
+        // yesterday's verse, carried into today
+        const yday = all.find((r) => dayOf(r.createdAt) === yesterdayKey());
+        setCarried(
+          yday?.verseRef ? VERSES.find((v) => v.ref === yday.verseRef) ?? null : null
+        );
+
+        // today's verse
+        const recentDim = all[0]?.dimensions?.slice(-1)[0];
+        const recentRefs = all.slice(0, 5).map((r) => r.verseRef).filter(Boolean);
+        setVerse(
+          pickVerse({ uid, semLevel: SEM_LEVEL, dimension: recentDim, exclude: recentRefs })
+        );
+      } catch (e) {
+        console.log('Could not load history', e);
+        setVerse(pickVerse({ uid, semLevel: SEM_LEVEL }));
+      }
+
+      setLoading(false);
+    };
+    load();
+  }, []);
+
   const submit = async () => {
     const answer = input.trim();
     if (!answer || thinking) return;
@@ -52,6 +113,7 @@ export default function HomeScreen() {
         semLevel: SEM_LEVEL,
         life: params.life,
         days: params.days,
+        carriedVerse: carried ?? undefined,
         history,
         currentQuestion: question,
         answer,
@@ -59,6 +121,10 @@ export default function HomeScreen() {
       });
       setHistory((h) => [...h, { question, answer, reflection: r.reflection }]);
       if (r.dimension) setDimensions((d) => [...d, r.dimension!]);
+      if (typeof r.assessedStage === 'number') {
+        setAssessedStage(r.assessedStage);
+        setStageReason(r.stageReason ?? null);
+      }
       if (r.actions) {
         setActions(r.actions);
         setPhase('suggest');
@@ -82,15 +148,35 @@ export default function HomeScreen() {
       const ref = await addDoc(collection(db, 'users', uid, 'reflections'), {
         createdAt: new Date().toISOString(),
         semLevel: SEM_LEVEL,
+        moodStage: SEM_LEVEL,
+          assessedStage,
+          stageReason,
         lifeSeason: params.life ?? null,
         days: params.days ?? null,
         turns: history,
-        actions,
-        dimensions,
+          actions,
+          dimensions,
+        verseRef: verse?.ref ?? null,
         checked: new Array(actions.length).fill(false),
         model: 'gemini-3.6-flash',
       });
       setReflectionId(ref.id);
+      setStreak((n) => n + 1);
+      // recompute the user's real stage from recent assessments
+      try {
+        const snap = await getDocs(
+          query(collection(db, 'users', uid, 'reflections'), orderBy('createdAt', 'desc'))
+        );
+        const scores = snap.docs
+          .map((d) => (d.data() as any).assessedStage)
+          .filter((n) => typeof n === 'number');
+        await updateDoc(doc(db, 'users', uid), {
+          formationStage: rollingStage(scores),
+          formationStageUpdatedAt: new Date().toISOString(),
+        });
+      } catch (e) {
+        console.log('Could not update formation stage', e);
+      }
     } catch (e) {
       console.log('Could not save reflection', e);
     }
@@ -128,6 +214,17 @@ export default function HomeScreen() {
       console.log('Could not save progress', e);
     }
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.screen, { alignItems: 'center', justifyContent: 'center' }]}>
+        <Text style={{ color: MUTED, fontFamily: 'serif', fontStyle: 'italic' }}>
+          One moment…
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.inner}>
       <View style={[styles.glow, styles.glow1]} />
@@ -140,7 +237,7 @@ export default function HomeScreen() {
         </View>
         <View style={{ alignItems: 'flex-end', gap: 8 }}>
           <View style={styles.streakPill}>
-            <Text style={styles.streakText}>Day 1</Text>
+            <Text style={styles.streakText}>Day {streak}</Text>
           </View>
           <Pressable onPress={() => { signOut(auth); router.replace('/'); }}>
             <Text style={styles.signOut}>Sign out</Text>
@@ -148,11 +245,13 @@ export default function HomeScreen() {
         </View>
       </View>
       {/* Daily verse */}
-      <View style={styles.verseCard}>
-        <Text style={styles.cardLabel}>DAILY VERSE</Text>
-        <Text style={styles.verseText}>“{VERSE.text}”</Text>
-        <Text style={styles.verseRef}>— {VERSE.ref}</Text>
-      </View>
+      {verse && (
+        <View style={styles.verseCard}>
+          <Text style={styles.cardLabel}>TODAY&apos;S VERSE</Text>
+          <Text style={styles.verseText}>“{verse.text}”</Text>
+          <Text style={styles.verseRef}>— {verse.ref}</Text>
+        </View>
+      )}
       {/* Reflection */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
@@ -250,8 +349,28 @@ export default function HomeScreen() {
               </Pressable>
             ))}
           </View>
+          {allDone && (
+            <View style={styles.dayClosed}>
+              <Text style={styles.dayClosedText}>
+                That&apos;s all three. Small things, but they were yours to do.
+              </Text>
+              <Text style={styles.dayClosedSub}>Rest well tonight.</Text>
+            </View>
+          )}
         </View>
       )}
+      <Pressable onPress={() => router.push('/spirit')} style={styles.spiritCard}>
+        <View style={styles.spiritLetters}>
+          {['S', 'P', 'I', 'R', 'I', 'T'].map((l, i) => (
+            <Text key={i} style={styles.spiritLetter}>{l}</Text>
+          ))}
+        </View>
+        <Text style={styles.spiritTitle}>Your SPIRIT</Text>
+        <Text style={styles.spiritSub}>
+          Where your conversations have actually been going
+        </Text>
+        <Text style={styles.spiritArrow}>View  →</Text>
+      </Pressable>
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </ScrollView>
   );
@@ -408,5 +527,54 @@ const styles = StyleSheet.create({
   checkmark: { color: BG, fontSize: 13, fontWeight: '700' },
   actionText: { flex: 1, fontSize: 14.5, color: 'rgba(234,228,216,0.9)', lineHeight: 21 },
   actionTextDone: { color: MUTED, textDecorationLine: 'line-through' },
+  dayClosed: {
+    marginTop: 22,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(201,168,76,0.2)',
+    alignItems: 'center',
+  },
+  dayClosedText: {
+    fontFamily: 'serif',
+    fontSize: 16,
+    fontStyle: 'italic',
+    color: 'rgba(201,168,76,0.9)',
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  dayClosedSub: { fontSize: 13, color: MUTED, marginTop: 8 },
+
+  spiritCard: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(201,168,76,0.35)',
+    backgroundColor: 'rgba(201,168,76,0.07)',
+    borderRadius: 18,
+    paddingVertical: 26,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+  },
+  spiritLetters: { flexDirection: 'row', gap: 14, marginBottom: 16 },
+  spiritLetter: {
+    fontFamily: 'serif',
+    fontSize: 22,
+    color: 'rgba(201,168,76,0.75)',
+    letterSpacing: 1,
+  },
+  spiritTitle: { fontFamily: 'serif', fontSize: 24, color: TEXT },
+  spiritSub: {
+    fontSize: 13.5,
+    color: MUTED,
+    textAlign: 'center',
+    marginTop: 8,
+    lineHeight: 20,
+  },
+  spiritArrow: {
+    fontSize: 13,
+    color: GOLD,
+    marginTop: 18,
+    letterSpacing: 1,
+    fontWeight: '500',
+  },
   error: { color: '#E05C5C', marginTop: 20, fontSize: 13, lineHeight: 19 },
 });
