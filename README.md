@@ -90,10 +90,13 @@ Gemini is not a chatbot bolted onto a devotional. It makes every consequential d
 - **Writes the next question** — following the thread the person opened, one layer deeper
 - **Identifies which SPIRIT dimension** their words actually concern. Money worry is Income even in a prayer app; exhaustion is Physical; loneliness is Relationship. Tracked across sessions to show where a life genuinely needs attention, and to notice when a dimension has gone quiet.
 - **Generates three actions**, shaped by the whole conversation and paced to the stage
+- **Assesses where the person actually is.** On the final turn it judges Formation Stage from the depth of the whole conversation — reading capacity, not feeling. Someone can be grieving and still be Stage 3; someone cheerful and still Stage 1. Each judgement is stored with its reasoning, and the stage that governs access is the rolling median of the last five, so one open morning does not promote and one flat day does not demote. **This is not something the user can declare.**
 - **Follows their tradition without being told.** Mention the rosary and it meets you in Catholic language; mention quiet time and it shifts. It never assumes.
 - **Replies in Taglish** if that is how the person writes
 
 A system prompt holds the voice: short sentences, everyday words, no exclamation marks, no advice unless asked. Written for a tired person reading on a phone at 6am, for whom English is a second language.
+
+**One thing the AI deliberately does not do: write Scripture.** Verses come from a curated bank tagged by dimension and stage — the model only selects. A misquoted verse in a faith app is a wound you cannot undo. The bank uses the World English Bible, which is public domain; NIV, ESV and NLT require a commercial licence.
 
 This accumulated understanding is what speaks for someone in Kindred — written generously, drawn from months of honest conversation rather than a paragraph agonised over at midnight.
 
@@ -132,9 +135,11 @@ Free keys at [aistudio.google.com](https://aistudio.google.com).
 
 ## Status
 
-**Working:** splash, registration with explicit consent, login, onboarding, Formation Stage check-in, and the full threaded reflection with live Gemini calls, adaptive questioning, dimension classification, and generated daily actions — persisted to Firestore behind per-user security rules.
+**Working end to end:** splash, registration with explicit consent, profile with age verification, login, onboarding, the daily mood check-in, and the full threaded reflection with live Gemini calls, adaptive questioning, dimension classification, AI stage assessment, and generated daily actions — all persisted to Firestore behind per-user security rules.
 
-**In progress:** loading past sessions on return, the SPIRIT dashboard, milestones.
+Sessions restore on return, with completed actions intact. Day boundaries follow the user's own clock rather than UTC, so it works wherever someone is. The day count is cumulative — missing a day resets nothing.
+
+**The SPIRIT dashboard** shows the six dimensions with real activity drawn from accumulated classification, notices when one has gone quiet, and describes the Formation Stage rather than scoring it. Nothing on it is entered by the user.
 
 **Next:** community and events discovery, then Spiritly Kindred — profile generation, proximity-based connection, in-app chat, and the pacing that makes connection something you grow into rather than purchase.
 
