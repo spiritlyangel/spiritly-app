@@ -1,12 +1,11 @@
 import { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SpiritlyLogo } from '../components/SpiritlyLogo';
+import { View, Text, StyleSheet, Pressable, Animated, ScrollView } from 'react-native';
 
 export default function WelcomeScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<Record<string, string>>();
-
   const fadeMark = useRef(new Animated.Value(0)).current;
   const fadeOne = useRef(new Animated.Value(0)).current;
   const fadeTwo = useRef(new Animated.Value(0)).current;
@@ -16,7 +15,7 @@ export default function WelcomeScreen() {
 
   useEffect(() => {
     const step = (v: Animated.Value, delay: number) =>
-      Animated.timing(v, { toValue: 1, duration: 700, delay, useNativeDriver: true });
+      Animated.timing(v, { toValue: 1, duration: 700, delay, useNativeDriver: false });
 
     Animated.parallel([
       step(fadeMark, 200),
@@ -33,9 +32,9 @@ export default function WelcomeScreen() {
       <View style={[styles.glow, styles.glow1]} />
       <View style={[styles.glow, styles.glow2]} />
 
-      <View style={styles.inner}>
-        <Animated.View style={{ opacity: fadeMark, alignItems: 'center' }}>
-          <SpiritlyLogo size={64} />
+      <ScrollView contentContainerStyle={styles.inner} showsVerticalScrollIndicator={false}>
+        <Animated.View style={{ opacity: fadeRest, alignItems: 'center' }} pointerEvents="auto">
+          <SpiritlyLogo size={56} />
           <Text style={styles.wordmark}>
             Spirit<Text style={styles.accent}>ly</Text>
           </Text>
@@ -72,7 +71,7 @@ export default function WelcomeScreen() {
             <Text style={styles.buttonText}>Begin</Text>
           </Pressable>
         </Animated.View>
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -88,18 +87,17 @@ const styles = StyleSheet.create({
   glow1: { width: 560, height: 560, top: -260, opacity: 0.05 },
   glow2: { width: 300, height: 300, top: -160, opacity: 0.05 },
   inner: {
-    flex: 1,
     paddingHorizontal: 28,
-    paddingTop: 90,
-    paddingBottom: 50,
+    paddingTop: 56,
+    paddingBottom: 60,
     alignItems: 'center',
   },
   wordmark: {
     fontFamily: 'serif',
-    fontSize: 38,
+    fontSize: 34,
     color: TEXT,
     letterSpacing: 1,
-    marginTop: 22,
+    marginTop: 18,
   },
   accent: { color: GOLD, fontStyle: 'italic' },
   caption: {
@@ -108,14 +106,14 @@ const styles = StyleSheet.create({
     marginTop: 12,
     textAlign: 'center',
   },
-  lines: { marginTop: 44, marginBottom: 38, alignSelf: 'stretch' },
+  lines: { marginTop: 34, marginBottom: 30, alignSelf: 'stretch' },
   line: {
     fontFamily: 'serif',
-    fontSize: 23,
+    fontSize: 21,
     color: 'rgba(234,228,216,0.92)',
     textAlign: 'center',
-    marginBottom: 13,
-    lineHeight: 31,
+    marginBottom: 10,
+    lineHeight: 29,
   },
   rule: { width: 44, height: 1, backgroundColor: 'rgba(201,168,76,0.45)', marginBottom: 22 },
   verse: {
@@ -128,7 +126,7 @@ const styles = StyleSheet.create({
   },
   ref: { fontSize: 12, color: MUTED, marginTop: 10, letterSpacing: 0.5 },
   button: {
-    marginTop: 44,
+    marginTop: 32,
     borderWidth: 1,
     borderColor: 'rgba(201,168,76,0.55)',
     backgroundColor: 'rgba(201,168,76,0.1)',
